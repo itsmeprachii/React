@@ -1,4 +1,4 @@
-import conf from '../config/confi.js';
+import conf from '../conf/conf.js';
 import { Client, ID,Databases,Storage,Query } from "appwrite";
 export class Service{
     client=new Client();
@@ -6,14 +6,23 @@ export class Service{
     bucket;
 
     constructor(){
-        this.client
-         .setEndpoint(conf.appwriteUrl) // Your Appwrite Endpoint
-          .setProject(conf.appwriteProjectId); // Your Appwrite Project ID
-        this.databases = new Databases(this.client);
-        this.bucket = new Storage(this.client);
+        try {
+            this.client
+             .setEndpoint(conf.appwriteUrl) // Your Appwrite Endpoint
+              .setProject(conf.appwriteProjectId); // Your Appwrite Project ID
+            this.databases = new Databases(this.client);
+            this.bucket = new Storage(this.client);
+        } catch (error) {
+            console.error("Service :: constructor :: error", error);
+            this.databases = null;
+            this.bucket = null;
+        }
     }
     async createPost({title, slug, content, featuredImage,status, userId}) {
         try {
+            if (!this.databases) {
+                throw new Error("Appwrite not configured properly");
+            }
             await this.databases.createDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
@@ -33,6 +42,9 @@ export class Service{
 }
 async updatePost(slug,{title,  content, featuredImage,status}) {
     try {
+        if (!this.databases) {
+            throw new Error("Appwrite not configured properly");
+        }
         await this.databases.updateDocument(
             conf.appwriteDatabaseId,
             conf.appwriteCollectionId,
@@ -51,6 +63,9 @@ async updatePost(slug,{title,  content, featuredImage,status}) {
 }
 async deletePost(slug){
     try {
+        if (!this.databases) {
+            throw new Error("Appwrite not configured properly");
+        }
         await this.databases.deleteDocument(
             conf.appwriteDatabaseId,
             conf.appwriteCollectionId,
@@ -65,6 +80,9 @@ async deletePost(slug){
 }
 async getPost(slug) {
     try {
+        if (!this.databases) {
+            throw new Error("Appwrite not configured properly");
+        }
         return await this.databases.getDocument(
             conf.appwriteDatabaseId,
             conf.appwriteCollectionId,
@@ -78,6 +96,10 @@ async getPost(slug) {
 }
 async getPosts(queries=[Query.equal("status","active")]) {
     try {
+        if (!this.databases) {
+            console.warn("Appwrite not configured properly");
+            return { documents: [] };
+        }
         return await this.databases.listDocuments(
             conf.appwriteDatabaseId,
             conf.appwriteCollectionId,
@@ -86,12 +108,15 @@ async getPosts(queries=[Query.equal("status","active")]) {
         )
     } catch (error) {
         console.log("Appwrite service  :: getPosts :: error", error);
-        return [];
+        return { documents: [] };
     }
 }
 //file upload service
 async uploadFile(file) {
     try {
+        if (!this.bucket) {
+            throw new Error("Appwrite not configured properly");
+        }
         return await this.bucket.createFile(
             conf.appwriteBucketId,
             ID.unique(),
@@ -103,7 +128,10 @@ async uploadFile(file) {
     }
 }
 async deleteFile(fileId) {
-    try {  
+    try {
+        if (!this.bucket) {
+            throw new Error("Appwrite not configured properly");
+        }
          await this.bucket.deleteFile(
             conf.appwriteBucketId,
             fileId
@@ -115,10 +143,19 @@ async deleteFile(fileId) {
     }
 }
 getFilePreview(fileId){
-    return this.bucket.getFilePreview(
-        conf.appwriteBucketId,
-        fileId
-    )
+    try {
+        if (!this.bucket) {
+            console.warn("Appwrite not configured properly");
+            return "";
+        }
+        return this.bucket.getFilePreview(
+            conf.appwriteBucketId,
+            fileId
+        )
+    } catch (error) {
+        console.log("Appwrite service  :: getFilePreview :: error", error);
+        return "";
+    }
 }
 }
 const service=new Service();

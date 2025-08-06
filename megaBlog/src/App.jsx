@@ -6,6 +6,9 @@ import authService from "./appwrite/auth"
 import {login, logout} from "./store/authSlice"
 import { Footer, Header } from './components'
 import { Outlet } from 'react-router-dom'
+import ConfigChecker from './components/ConfigChecker'
+
+
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -21,19 +24,27 @@ function App() {
       }
     })
     .finally(() => setLoading(false))
-  }, [])
+  }, [dispatch])
   
   return !loading ? (
     <div className='min-h-screen flex flex-wrap content-between bg-gray-400'>
+      <ConfigChecker />
       <div className='w-full block'>
         <Header />
         <main>
-        TODO:  <Outlet />
+          <Outlet />
         </main>
         <Footer />
       </div>
     </div>
-  ) : null
+  ) : (
+    <div className="min-h-screen flex items-center justify-center bg-gray-400">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
 }
 
 export default App
